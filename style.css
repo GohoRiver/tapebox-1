@@ -180,9 +180,35 @@ body {
 }
 
 /* =========================================================
+   背景粒子层（金币 / 微光，填补深色留白）
+   ========================================================= */
+.bg-particles {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bg-particles span {
+  position: absolute;
+  top: -40px;
+  font-size: 18px;
+  opacity: 0.5;
+  animation: bg-fall linear infinite;
+}
+@keyframes bg-fall {
+  0% { transform: translateY(-40px) rotate(0); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+}
+
+/* =========================================================
    顶部 7 个选项（手机端横向滑动 / 电脑端居中）
    ========================================================= */
 .box-options {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 10px;
   max-width: 1100px;
@@ -199,8 +225,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-width: 84px;
+  gap: 2px;
+  min-width: 92px;
   padding: 10px 12px;
   border-radius: 14px;
   border: 1px solid rgba(255, 215, 0, 0.3);
@@ -220,25 +246,29 @@ body {
 }
 .opt-icon { font-size: 22px; }
 .opt-name { white-space: nowrap; }
+.opt-sub { font-size: 10px; opacity: 0.75; white-space: nowrap; }
 
 /* =========================================================
    中心大宝箱舞台
    ========================================================= */
 .stage {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 26px;
   max-width: 1100px;
-  margin: 10px auto 40px;
-  padding: 20px 18px;
+  min-height: calc(100vh - 220px);
+  margin: 0 auto;
+  padding: 24px 18px 48px;
 }
 
 .big-chest {
   position: relative;
-  width: 260px;
-  height: 260px;
+  width: clamp(240px, 42vw, 380px);
+  height: clamp(240px, 42vw, 380px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -267,11 +297,11 @@ body {
   50% { opacity: 1; transform: scale(1.18); }
 }
 
-/* 宝箱主体 */
+/* 宝箱主体（完整纯金造型，无悬浮方块） */
 .chest-body {
   position: relative;
-  width: 200px;
-  height: 170px;
+  width: 78%;
+  height: 66%;
   z-index: 2;
 }
 
@@ -280,11 +310,11 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 62px;
-  border-radius: 100px 100px 12px 12px;
-  background: linear-gradient(160deg, #ffe066, var(--gold), var(--gold-deep));
+  height: 38%;
+  border-radius: 100px 100px 10px 10px;
+  background: linear-gradient(160deg, #fff3b0, #ffe066, var(--gold), var(--gold-deep));
   border: 3px solid var(--gold-dark);
-  box-shadow: inset 0 -6px 14px rgba(0, 0, 0, 0.35), 0 0 24px rgba(255, 215, 0, 0.6);
+  box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.35), 0 0 30px rgba(255, 215, 0, 0.7);
 }
 
 .chest-base {
@@ -292,49 +322,34 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 118px;
-  border-radius: 12px 12px 16px 16px;
-  background: linear-gradient(160deg, var(--gold), var(--gold-deep), var(--gold-dark));
+  height: 68%;
+  border-radius: 10px 10px 18px 18px;
+  background: linear-gradient(160deg, #ffe066, var(--gold), var(--gold-deep), var(--gold-dark));
   border: 3px solid var(--gold-dark);
-  box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.35), 0 0 30px rgba(255, 215, 0, 0.5);
+  box-shadow: inset 0 10px 22px rgba(0, 0, 0, 0.35), 0 0 40px rgba(255, 215, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .chest-emoji {
-  font-size: 54px;
-  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.7));
-}
-
-/* 锁扣 */
-.chest-lock {
-  position: absolute;
-  top: 52px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 34px;
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(160deg, #fff3b0, var(--gold-dark));
-  border: 2px solid #7a5c00;
-  z-index: 3;
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.8);
+  font-size: clamp(48px, 9vw, 84px);
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.8));
 }
 
 /* 主题色：不同选项切换宝箱色调 */
-.big-chest[data-theme="2"] .chest-lid,
-.big-chest[data-theme="2"] .chest-base { filter: hue-rotate(-18deg) brightness(1.05); }
-.big-chest[data-theme="3"] .chest-lid,
-.big-chest[data-theme="3"] .chest-base { filter: hue-rotate(12deg) saturate(1.3); }
-.big-chest[data-theme="main"] .chest-lid,
-.big-chest[data-theme="main"] .chest-base { filter: hue-rotate(0deg) saturate(1.5) brightness(1.1); }
+.big-chest[data-theme="daily2"] .chest-lid,
+.big-chest[data-theme="daily2"] .chest-base { filter: hue-rotate(-18deg) brightness(1.05); }
+.big-chest[data-theme="daily3"] .chest-lid,
+.big-chest[data-theme="daily3"] .chest-base { filter: hue-rotate(12deg) saturate(1.3); }
+.big-chest[data-theme="main_bronze"] .chest-lid,
+.big-chest[data-theme="main_bronze"] .chest-base { filter: hue-rotate(-10deg) saturate(1.2); }
+.big-chest[data-theme="main_silver"] .chest-lid,
+.big-chest[data-theme="main_silver"] .chest-base { filter: hue-rotate(0deg) saturate(1.5) brightness(1.1); }
+.big-chest[data-theme="main_diamond"] .chest-lid,
+.big-chest[data-theme="main_diamond"] .chest-base { filter: hue-rotate(20deg) saturate(1.4) brightness(1.15); }
 .big-chest[data-theme="free"] .chest-lid,
 .big-chest[data-theme="free"] .chest-base { filter: hue-rotate(160deg) saturate(0.9); }
-.big-chest[data-theme="more"] .chest-lid,
-.big-chest[data-theme="more"] .chest-base { filter: hue-rotate(220deg) saturate(1.1); }
-.big-chest[data-theme="airdrop"] .chest-lid,
-.big-chest[data-theme="airdrop"] .chest-base { filter: hue-rotate(280deg) saturate(1.1); }
 
 /* 星光点缀 */
 .chest-sparkles {
@@ -871,12 +886,7 @@ body {
     padding-right: 14px;
   }
 
-  .big-chest { width: 210px; height: 210px; }
-  .chest-body { width: 160px; height: 140px; }
-  .chest-lid { height: 52px; }
-  .chest-base { height: 96px; }
-  .chest-emoji { font-size: 44px; }
-  .chest-lock { top: 44px; width: 28px; height: 34px; }
+  .big-chest { width: clamp(200px, 62vw, 300px); height: clamp(200px, 62vw, 300px); }
 
   .mini-stat { flex: 1 1 100%; }
 

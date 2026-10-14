@@ -47,17 +47,18 @@
   let currentWin = null;      // 当前中奖信息
   let timeTampered = false;   // 是否检测到时间异常
   let drawTriggered = false;  // 防止重复开奖
-  let currentOption = '1';    // 当前选中的选项（1/2/3/main/free/more/airdrop）
+  let currentOption = 'daily1'; // 当前选中的选项
 
-  // 选项元数据：图标、名称、描述、是否主宝箱、是否占位
+  // 选项元数据：图标、名称、描述、类型（daily/main/free）、对应数据 key
+  // dataKey 指向 getBoxData() 中的键；betKey 指向投注记录键
   const OPTION_META = {
-    '1':       { icon: '🎁', name: '青铜宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 0.05 BEM 争夺奖池。', main: false, placeholder: false },
-    '2':       { icon: '💎', name: '白银宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 0.5 BEM 争夺奖池。', main: false, placeholder: false },
-    '3':       { icon: '👑', name: '黄金宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 5 BEM 争夺奖池。', main: false, placeholder: false },
-    'main':    { icon: '🏆', name: '主宝箱 TapeBox', desc: '不设时间限制，参与人数达到 50 人立即开奖，公平随机抽取唯一赢家。', main: true, placeholder: false },
-    'free':    { icon: '🆓', name: 'Type Box', desc: '完全免费参与，不限人数，24:00 准时开奖。奖池 = 当日所有付费宝箱手续费的 1%。', main: false, placeholder: false },
-    'more':    { icon: '🎯', name: '更多活动', desc: '更多精彩活动正在筹备中，敬请期待！', main: false, placeholder: true },
-    'airdrop': { icon: '🪂', name: '空投计划', desc: '空投计划即将上线，敬请期待！', main: false, placeholder: true }
+    'daily1':       { icon: '🎁', name: '每日青铜宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 0.05 BEM 争夺奖池。', type: 'daily', dataKey: '1',       betKey: '1',            price: 0.05 },
+    'daily2':       { icon: '💎', name: '每日白银宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 0.5 BEM 争夺奖池。',  type: 'daily', dataKey: '2',       betKey: '2',            price: 0.5 },
+    'daily3':       { icon: '👑', name: '每日黄金宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 5 BEM 争夺奖池。',    type: 'daily', dataKey: '3',       betKey: '3',            price: 5 },
+    'main_bronze':  { icon: '🥉', name: 'TapeBox 青铜宝箱', desc: '不设时间限制，参与人数达到 50 人立即开奖，投入 0.05 BEM。', type: 'main', dataKey: 'bronze',  betKey: 'main_bronze',  price: 0.05 },
+    'main_silver':  { icon: '🥈', name: 'TapeBox 白银宝箱', desc: '不设时间限制，参与人数达到 50 人立即开奖，投入 0.5 BEM。',  type: 'main', dataKey: 'silver',  betKey: 'main_silver',  price: 0.5 },
+    'main_diamond': { icon: '🏆', name: 'TapeBox 钻石宝箱', desc: '不设时间限制，参与人数达到 50 人立即开奖，投入 5 BEM。',    type: 'main', dataKey: 'diamond', betKey: 'main_diamond', price: 5 },
+    'free':         { icon: '🆓', name: 'Type Box 免费宝箱', desc: '完全免费参与，不限人数，24:00 准时开奖。奖池 = 当日所有付费宝箱手续费的 1%。', type: 'free', dataKey: 'free', betKey: 'free', price: 0 }
   };
 
   /* =========================================================
@@ -382,100 +383,55 @@
     const maxEl = document.getElementById('miniPlayersMax');
     const poolEl = document.getElementById('miniPool');
 
-    // 占位选项：显示占位信息
-    if (meta.placeholder) {
-      playersEl.textContent = '--';
-      maxEl.textContent = '';
-      poolEl.textContent = '敬请期待';
-      return;
-    }
-
     const data = await getBoxData();
+    const d = data[meta.dataKey];
 
-    if (meta.main) {
-      // 主宝箱：汇总三个子箱
-      let players = 0, pool = 0;
-      Object.keys(MAIN_BOXES).forEach(k => {
-        players += data[k].players;
-        pool += data[k].pool;
-      });
-      playersEl.textContent = players;
-      maxEl.textContent = '/ ' + (MAIN_MAX_PLAYERS * 3) + ' 人';
-      poolEl.textContent = pool.toFixed(2) + ' BEM';
+    playersEl.textContent = d.players;
+    if (meta.type === 'main') {
+      maxEl.textContent = '/ ' + MAIN_MAX_PLAYERS + ' 人';
+    } else if (meta.type === 'free') {
+      maxEl.textContent = '/ 不限';
     } else {
-      const key = currentOption;
-      playersEl.textContent = data[key].players;
-      maxEl.textContent = '/ ' + (currentOption === 'free' ? '不限' : DAILY_MAX_PLAYERS) + ' 人';
-      poolEl.textContent = data[key].pool.toFixed(2) + ' BEM';
+      maxEl.textContent = '/ ' + DAILY_MAX_PLAYERS + ' 人';
     }
+    poolEl.textContent = d.pool.toFixed(2) + ' BEM';
   }
 
   // 渲染详情页内容
   async function renderDetail() {
     const meta = OPTION_META[currentOption];
     const data = await getBoxData();
+    const d = data[meta.dataKey];
 
     document.getElementById('detailIcon').textContent = meta.icon;
     document.getElementById('detailTitle').textContent = meta.name;
     document.getElementById('detailDesc').textContent = meta.desc;
 
-    const subboxesEl = document.getElementById('detailSubboxes');
-    const actionsEl = document.getElementById('detailActions');
-    const statsEl = document.querySelector('.detail-stats');
-
-    // 占位选项：隐藏投注相关
-    if (meta.placeholder) {
-      subboxesEl.classList.add('hidden');
-      actionsEl.classList.add('hidden');
-      statsEl.classList.add('hidden');
-      document.getElementById('detailPrice').textContent = '';
-      return;
-    }
-
-    statsEl.classList.remove('hidden');
-
-    if (meta.main) {
-      // 主宝箱：显示三个子箱，隐藏单按钮
-      subboxesEl.classList.remove('hidden');
-      actionsEl.classList.add('hidden');
-      document.getElementById('detailPrice').textContent = '满 50 人即开奖';
-      // 详情页顶部统计显示汇总
-      let players = 0, pool = 0;
-      Object.keys(MAIN_BOXES).forEach(k => {
-        players += data[k].players;
-        pool += data[k].pool;
-      });
-      document.querySelector('.players[data-players="detail"]').textContent = players;
-      document.getElementById('detailPlayersMax').textContent = '/ ' + (MAIN_MAX_PLAYERS * 3) + ' 人';
-      document.querySelector('.pool[data-pool="detail"]').textContent = pool.toFixed(2) + ' BEM';
+    // 价格文案
+    if (meta.type === 'free') {
+      document.getElementById('detailPrice').textContent = '免费参与';
+    } else if (meta.type === 'main') {
+      document.getElementById('detailPrice').textContent = `起投 ${meta.price} BEM · 满 50 人即开奖`;
     } else {
-      // 普通宝箱：显示单按钮
-      subboxesEl.classList.add('hidden');
-      actionsEl.classList.remove('hidden');
-
-      const cfg = currentOption === 'free' ? FREE_BOX : DAILY_BOXES[currentOption];
-      const betBtn = document.getElementById('detailBetBtn');
-      betBtn.dataset.bet = currentOption;
-      betBtn.textContent = currentOption === 'free' ? '免费参与' : `投入 ${cfg.price} BEM`;
-      document.getElementById('detailPrice').textContent =
-        currentOption === 'free' ? '免费参与' : `起投 ${cfg.price} BEM`;
-
-      document.querySelector('.players[data-players="detail"]').textContent = data[currentOption].players;
-      document.getElementById('detailPlayersMax').textContent =
-        '/ ' + (currentOption === 'free' ? '不限' : DAILY_MAX_PLAYERS) + ' 人';
-      document.querySelector('.pool[data-pool="detail"]').textContent = data[currentOption].pool.toFixed(2) + ' BEM';
+      document.getElementById('detailPrice').textContent = `起投 ${meta.price} BEM · 24:00 开奖`;
     }
+
+    // 详情页统计
+    document.querySelector('.players[data-players="detail"]').textContent = d.players;
+    document.getElementById('detailPlayersMax').textContent =
+      meta.type === 'free' ? '/ 不限' : (meta.type === 'main' ? '/ ' + MAIN_MAX_PLAYERS + ' 人' : '/ ' + DAILY_MAX_PLAYERS + ' 人');
+    document.querySelector('.pool[data-pool="detail"]').textContent = d.pool.toFixed(2) + ' BEM';
+
+    // 投注按钮
+    const betBtn = document.getElementById('detailBetBtn');
+    betBtn.dataset.bet = meta.betKey;
+    betBtn.textContent = meta.type === 'free' ? '免费参与' : `投入 ${meta.price} BEM`;
 
     await refreshAllButtons();
   }
 
   // 打开详情页
   async function openDetail() {
-    const meta = OPTION_META[currentOption];
-    if (meta.placeholder) {
-      showToast(meta.name + ' 正在开发中，敬请期待！');
-      return;
-    }
     await renderDetail();
     document.getElementById('detailOverlay').classList.remove('hidden');
   }
@@ -613,9 +569,13 @@
     if (timeTampered) { showToast('系统时间异常，请校准本地时间'); return; }
     if (!walletAddress) { showToast('请先连接钱包'); return; }
 
-    const isMain = Object.prototype.hasOwnProperty.call(MAIN_BOXES, boxKey);
-    const isFree = boxKey === 'free';
-    const isDaily = Object.prototype.hasOwnProperty.call(DAILY_BOXES, boxKey);
+    // 根据 betKey 反查选项元数据
+    const meta = Object.values(OPTION_META).find(m => m.betKey === boxKey);
+    if (!meta) return;
+
+    const isMain = meta.type === 'main';
+    const isFree = meta.type === 'free';
+    const isDaily = meta.type === 'daily';
 
     // 每日宝箱与免费宝箱受防狙击限制
     if ((isDaily || isFree) && isSnipeLocked()) {
@@ -623,20 +583,18 @@
       return;
     }
 
-    const betKey = isMain ? 'main_' + boxKey : boxKey;
-    if (await hasBet(betKey)) { showToast('今日该宝箱已投入'); return; }
+    if (await hasBet(meta.betKey)) { showToast('今日该宝箱已投入'); return; }
 
     const data = await getBoxData();
-    const cfg = isMain ? MAIN_BOXES[boxKey] : (isFree ? FREE_BOX : DAILY_BOXES[boxKey]);
     const maxPlayers = isMain ? MAIN_MAX_PLAYERS : DAILY_MAX_PLAYERS;
 
-    if (data[boxKey].players >= maxPlayers) { showToast('该宝箱已满员'); return; }
+    if (data[meta.dataKey].players >= maxPlayers) { showToast('该宝箱已满员'); return; }
 
     // 更新参与人数与奖池
-    data[boxKey].players += 1;
-    data[boxKey].pool = +(data[boxKey].pool + cfg.price).toFixed(4);
+    data[meta.dataKey].players += 1;
+    data[meta.dataKey].pool = +(data[meta.dataKey].pool + meta.price).toFixed(4);
     await saveBoxData(data);
-    await markBet(betKey);
+    await markBet(meta.betKey);
 
     await renderBoxes();
     await refreshAllButtons();
@@ -644,12 +602,12 @@
     if (isFree) {
       showToast('免费参与成功！等待 24:00 开奖');
     } else {
-      showToast(`成功投入 ${cfg.price} BEM 到${cfg.name}！`);
+      showToast(`成功投入 ${meta.price} BEM 到${meta.name}！`);
     }
 
     // 主宝箱满 50 人立即开奖
-    if (isMain && data[boxKey].players >= MAIN_MAX_PLAYERS) {
-      triggerMainDraw(boxKey);
+    if (isMain && data[meta.dataKey].players >= MAIN_MAX_PLAYERS) {
+      triggerMainDraw(meta.dataKey);
     }
   }
 
@@ -871,12 +829,13 @@
       if (e.target.id === 'detailOverlay') closeDetail();
     });
 
-    // 生成大宝箱星光点缀
+    // 生成大宝箱星光点缀 + 背景粒子
     initSparkles();
+    initBgParticles();
 
     await renderBoxes();
     await refreshAllButtons();
-    await selectOption('1');
+    await selectOption('daily1');
 
     updateTimers();
     setInterval(async () => {
@@ -897,6 +856,22 @@
       s.style.top = (secureRandomFloat() * 80 + 5) + '%';
       s.style.animationDelay = (secureRandomFloat() * 2) + 's';
       box.appendChild(s);
+    }
+  }
+
+  // 背景飘落金币 / 微光粒子（填补深色留白）
+  function initBgParticles() {
+    const layer = document.getElementById('bgParticles');
+    if (!layer) return;
+    const icons = ['🪙', '✨', '💰', '⭐', '💫'];
+    for (let i = 0; i < 22; i++) {
+      const s = document.createElement('span');
+      s.textContent = icons[secureRandomInt(icons.length)];
+      s.style.left = (secureRandomFloat() * 100) + '%';
+      s.style.fontSize = (secureRandomFloat() * 14 + 12) + 'px';
+      s.style.animationDuration = (secureRandomFloat() * 12 + 10) + 's';
+      s.style.animationDelay = (secureRandomFloat() * 12) + 's';
+      layer.appendChild(s);
     }
   }
 
