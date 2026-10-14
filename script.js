@@ -41,6 +41,12 @@
   // 时间跳跃阈值：放宽到 24 小时，避免电脑休眠 / 时间同步导致误报
   const TIME_JUMP_THRESHOLD = 24 * 60 * 60 * 1000;
 
+  // 数据版本号：版本不一致时强制清空历史残留数据（含旧版随机人数）
+  const DATA_VERSION = 'v2.0';
+  const DATA_VERSION_KEY = 'tapebox_data_version';
+  // 需要清理的 localStorage 前缀
+  const DATA_PREFIXES = ['tapebox_bets_', 'tapebox_boxdata_', 'tapebox_feepool_'];
+
   /* -------------------- 闭包内部状态 -------------------- */
   let walletAddress = null;   // 当前钱包地址
   let sharedToday = false;    // 今日是否已分享
@@ -150,6 +156,27 @@
      三、localStorage 状态管理（带签名校验）
      ========================================================= */
 
+  // 数据版本迁移：版本不一致或不存在时，清空所有业务数据
+  // 用于彻底清除旧版本残留的随机人数 / 随机奖池
+  function migrateData() {
+    const current = localStorage.getItem(DATA_VERSION_KEY);
+    if (current === DATA_VERSION) return;
+
+    // 收集需要删除的键（避免边遍历边删除）
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (DATA_PREFIXES.some(p => key.startsWith(p))) {
+        toRemove.push(key);
+      }
+    }
+    toRemove.forEach(k => localStorage.removeItem(k));
+
+    // 写入新版本号
+    localStorage.setItem(DATA_VERSION_KEY, DATA_VERSION);
+  }
+
   // 获取今天的日期字符串
   function todayKey() {
     const d = new Date();
@@ -188,22 +215,36 @@
   }
 
   // 读取各 Box 参与数据（带校验）
-  // 初始全部为 0，仅真实投注后累加
+  // 初始全部为 0，仅真实投注后累加；无任何随机人数 / 随机奖池
   async function getBoxData() {
     const key = 'tapebox_boxdata_' + todayKey();
     const data = await secureGet(key);
+
+    // 构造全 0 的初始结构
+    const init = {};
+    Object.keys(DAILY_BOXES).forEach(k => { init[k] = { players: 0, pool: 0 }; });
+    Object.keys(MAIN_BOXES).forEach(k => { init[k] = { players: 0, pool: 0 }; });
+    init['free'] = { players: 0, pool: 0 };
+
     if (data === null) {
-      // 初始化：所有宝箱人数与奖池均为 0（无虚拟人数）
-      const init = {};
-      Object.keys(DAILY_BOXES).forEach(k => {
-        init[k] = { players: 0, pool: 0 };
-      });
-      Object.keys(MAIN_BOXES).forEach(k => {
-        init[k] = { players: 0, pool: 0 };
-      });
-      init['free'] = { players: 0, pool: 0 };
+      // 不存在或签名校验失败 → 写入全 0 初始数据
       await secureSet(key, init);
       return init;
+    }
+
+    // 兼容清洗：确保每个宝箱的 players / pool 均为合法非负数字
+    // 若发现旧版残留的异常值（非数字 / 负数），重置为 0
+    let dirty = false;
+    Object.keys(init).forEach(k => {
+      const d = data[k];
+      if (!d || typeof d.players !== 'number' || typeof d.pool !== 'number' ||
+          d.players < 0 || d.pool < 0 || !isFinite(d.players) || !isFinite(d.pool)) {
+        data[k] = { players: 0, pool: 0 };
+        dirty = true;
+      }
+    });
+    if (dirty) {
+      await secureSet(key, data);
     }
     return data;
   }
@@ -805,6 +846,9 @@
      ========================================================= */
 
   async function init() {
+    // 数据版本迁移：清空旧版本残留数据（含随机人数），必须在读取数据前执行
+    migrateData();
+
     // 页面加载时检测时间旅行（仅记录状态，不弹全局警告）
     checkTimeTravel();
 
