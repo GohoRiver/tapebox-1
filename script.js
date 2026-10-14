@@ -47,6 +47,18 @@
   let currentWin = null;      // 当前中奖信息
   let timeTampered = false;   // 是否检测到时间异常
   let drawTriggered = false;  // 防止重复开奖
+  let currentOption = '1';    // 当前选中的选项（1/2/3/main/free/more/airdrop）
+
+  // 选项元数据：图标、名称、描述、是否主宝箱、是否占位
+  const OPTION_META = {
+    '1':       { icon: '🎁', name: '青铜宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 0.05 BEM 争夺奖池。', main: false, placeholder: false },
+    '2':       { icon: '💎', name: '白银宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 0.5 BEM 争夺奖池。', main: false, placeholder: false },
+    '3':       { icon: '👑', name: '黄金宝箱', desc: '每日 24:00 开奖，最多 20 人参与，投入 5 BEM 争夺奖池。', main: false, placeholder: false },
+    'main':    { icon: '🏆', name: '主宝箱 TapeBox', desc: '不设时间限制，参与人数达到 50 人立即开奖，公平随机抽取唯一赢家。', main: true, placeholder: false },
+    'free':    { icon: '🆓', name: 'Type Box', desc: '完全免费参与，不限人数，24:00 准时开奖。奖池 = 当日所有付费宝箱手续费的 1%。', main: false, placeholder: false },
+    'more':    { icon: '🎯', name: '更多活动', desc: '更多精彩活动正在筹备中，敬请期待！', main: false, placeholder: true },
+    'airdrop': { icon: '🪂', name: '空投计划', desc: '空投计划即将上线，敬请期待！', main: false, placeholder: true }
+  };
 
   /* =========================================================
      一、安全工具：哈希签名 / 时间校验 / 安全随机数
@@ -337,6 +349,143 @@
   }
 
   /* =========================================================
+     七·二、选项切换与中心大宝箱
+     ========================================================= */
+
+  // 切换选项：更新大宝箱外观、精简状态、详情页内容
+  async function selectOption(opt) {
+    currentOption = opt;
+
+    // 更新选项按钮高亮
+    document.querySelectorAll('.opt-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.opt === opt);
+    });
+
+    // 更新大宝箱主题与图标
+    const chest = document.getElementById('bigChest');
+    chest.dataset.theme = opt;
+    document.getElementById('chestEmoji').textContent = OPTION_META[opt].icon;
+
+    // 更新精简状态栏
+    await updateMiniStats();
+
+    // 若详情页已打开，同步刷新详情内容
+    if (!document.getElementById('detailOverlay').classList.contains('hidden')) {
+      await renderDetail();
+    }
+  }
+
+  // 更新中心精简状态栏
+  async function updateMiniStats() {
+    const meta = OPTION_META[currentOption];
+    const playersEl = document.getElementById('miniPlayers');
+    const maxEl = document.getElementById('miniPlayersMax');
+    const poolEl = document.getElementById('miniPool');
+
+    // 占位选项：显示占位信息
+    if (meta.placeholder) {
+      playersEl.textContent = '--';
+      maxEl.textContent = '';
+      poolEl.textContent = '敬请期待';
+      return;
+    }
+
+    const data = await getBoxData();
+
+    if (meta.main) {
+      // 主宝箱：汇总三个子箱
+      let players = 0, pool = 0;
+      Object.keys(MAIN_BOXES).forEach(k => {
+        players += data[k].players;
+        pool += data[k].pool;
+      });
+      playersEl.textContent = players;
+      maxEl.textContent = '/ ' + (MAIN_MAX_PLAYERS * 3) + ' 人';
+      poolEl.textContent = pool.toFixed(2) + ' BEM';
+    } else {
+      const key = currentOption;
+      playersEl.textContent = data[key].players;
+      maxEl.textContent = '/ ' + (currentOption === 'free' ? '不限' : DAILY_MAX_PLAYERS) + ' 人';
+      poolEl.textContent = data[key].pool.toFixed(2) + ' BEM';
+    }
+  }
+
+  // 渲染详情页内容
+  async function renderDetail() {
+    const meta = OPTION_META[currentOption];
+    const data = await getBoxData();
+
+    document.getElementById('detailIcon').textContent = meta.icon;
+    document.getElementById('detailTitle').textContent = meta.name;
+    document.getElementById('detailDesc').textContent = meta.desc;
+
+    const subboxesEl = document.getElementById('detailSubboxes');
+    const actionsEl = document.getElementById('detailActions');
+    const statsEl = document.querySelector('.detail-stats');
+
+    // 占位选项：隐藏投注相关
+    if (meta.placeholder) {
+      subboxesEl.classList.add('hidden');
+      actionsEl.classList.add('hidden');
+      statsEl.classList.add('hidden');
+      document.getElementById('detailPrice').textContent = '';
+      return;
+    }
+
+    statsEl.classList.remove('hidden');
+
+    if (meta.main) {
+      // 主宝箱：显示三个子箱，隐藏单按钮
+      subboxesEl.classList.remove('hidden');
+      actionsEl.classList.add('hidden');
+      document.getElementById('detailPrice').textContent = '满 50 人即开奖';
+      // 详情页顶部统计显示汇总
+      let players = 0, pool = 0;
+      Object.keys(MAIN_BOXES).forEach(k => {
+        players += data[k].players;
+        pool += data[k].pool;
+      });
+      document.querySelector('.players[data-players="detail"]').textContent = players;
+      document.getElementById('detailPlayersMax').textContent = '/ ' + (MAIN_MAX_PLAYERS * 3) + ' 人';
+      document.querySelector('.pool[data-pool="detail"]').textContent = pool.toFixed(2) + ' BEM';
+    } else {
+      // 普通宝箱：显示单按钮
+      subboxesEl.classList.add('hidden');
+      actionsEl.classList.remove('hidden');
+
+      const cfg = currentOption === 'free' ? FREE_BOX : DAILY_BOXES[currentOption];
+      const betBtn = document.getElementById('detailBetBtn');
+      betBtn.dataset.bet = currentOption;
+      betBtn.textContent = currentOption === 'free' ? '免费参与' : `投入 ${cfg.price} BEM`;
+      document.getElementById('detailPrice').textContent =
+        currentOption === 'free' ? '免费参与' : `起投 ${cfg.price} BEM`;
+
+      document.querySelector('.players[data-players="detail"]').textContent = data[currentOption].players;
+      document.getElementById('detailPlayersMax').textContent =
+        '/ ' + (currentOption === 'free' ? '不限' : DAILY_MAX_PLAYERS) + ' 人';
+      document.querySelector('.pool[data-pool="detail"]').textContent = data[currentOption].pool.toFixed(2) + ' BEM';
+    }
+
+    await refreshAllButtons();
+  }
+
+  // 打开详情页
+  async function openDetail() {
+    const meta = OPTION_META[currentOption];
+    if (meta.placeholder) {
+      showToast(meta.name + ' 正在开发中，敬请期待！');
+      return;
+    }
+    await renderDetail();
+    document.getElementById('detailOverlay').classList.remove('hidden');
+  }
+
+  // 关闭详情页
+  function closeDetail() {
+    document.getElementById('detailOverlay').classList.add('hidden');
+  }
+
+  /* =========================================================
      八、渲染
      ========================================================= */
 
@@ -354,6 +503,8 @@
         fillEl.style.width = pct + '%';
       }
     });
+    // 同步中心精简状态栏
+    await updateMiniStats();
   }
 
   /* =========================================================
@@ -448,10 +599,12 @@
      十、投注逻辑
      ========================================================= */
 
-  document.querySelectorAll('.btn-bet').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // 使用事件委托，兼容动态生成的投注按钮
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-bet');
+    if (btn && btn.dataset.bet) {
       handleBet(btn.dataset.bet);
-    });
+    }
   });
 
   async function handleBet(boxKey) {
@@ -703,14 +856,48 @@
     checkTimeTravel();
 
     initMarquee();
+
+    // 绑定 7 个选项按钮
+    document.querySelectorAll('.opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectOption(btn.dataset.opt));
+    });
+
+    // 点击大宝箱或查看详情按钮 → 打开详情页
+    document.getElementById('bigChest').addEventListener('click', openDetail);
+    document.getElementById('openDetailBtn').addEventListener('click', openDetail);
+    document.getElementById('closeDetailBtn').addEventListener('click', closeDetail);
+    // 点击遮罩空白处关闭详情页
+    document.getElementById('detailOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'detailOverlay') closeDetail();
+    });
+
+    // 生成大宝箱星光点缀
+    initSparkles();
+
     await renderBoxes();
     await refreshAllButtons();
+    await selectOption('1');
 
     updateTimers();
     setInterval(async () => {
       updateTimers();
       await refreshAllButtons();
     }, 1000);
+  }
+
+  // 大宝箱星光点缀
+  function initSparkles() {
+    const box = document.getElementById('chestSparkles');
+    if (!box) return;
+    const icons = ['✨', '⭐', '💫'];
+    for (let i = 0; i < 6; i++) {
+      const s = document.createElement('span');
+      s.textContent = icons[secureRandomInt(icons.length)];
+      s.style.left = (secureRandomFloat() * 90 + 5) + '%';
+      s.style.top = (secureRandomFloat() * 80 + 5) + '%';
+      s.style.animationDelay = (secureRandomFloat() * 2) + 's';
+      box.appendChild(s);
+    }
   }
 
   init();

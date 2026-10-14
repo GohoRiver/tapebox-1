@@ -36,174 +36,147 @@
   <!-- ===================== 安全警告条（时间异常 / 数据篡改时显示） ===================== -->
   <div class="security-alert hidden" id="securityAlert"></div>
 
-  <!-- ===================== 全局倒计时提示 ===================== -->
-  <div class="global-countdown">
-    <span class="gc-label">距离开奖</span>
-    <span id="globalTimer" class="gc-time">--:--:--</span>
-    <span class="gc-mount">mount</span>
-  </div>
+  <!-- ===================== 顶部 7 个选项（手机端可左右滑动） ===================== -->
+  <nav class="box-options" id="boxOptions">
+    <button class="opt-btn active" data-opt="1">
+      <span class="opt-icon">🎁</span><span class="opt-name">青铜宝箱</span>
+    </button>
+    <button class="opt-btn" data-opt="2">
+      <span class="opt-icon">💎</span><span class="opt-name">白银宝箱</span>
+    </button>
+    <button class="opt-btn" data-opt="3">
+      <span class="opt-icon">👑</span><span class="opt-name">黄金宝箱</span>
+    </button>
+    <button class="opt-btn" data-opt="main">
+      <span class="opt-icon">🏆</span><span class="opt-name">主宝箱</span>
+    </button>
+    <button class="opt-btn" data-opt="free">
+      <span class="opt-icon">🆓</span><span class="opt-name">Type Box</span>
+    </button>
+    <button class="opt-btn" data-opt="more">
+      <span class="opt-icon">🎯</span><span class="opt-name">更多活动</span>
+    </button>
+    <button class="opt-btn" data-opt="airdrop">
+      <span class="opt-icon">🪂</span><span class="opt-name">空投计划</span>
+    </button>
+  </nav>
 
-  <!-- ===================== 主游戏区：三个付费宝箱 ===================== -->
-  <main class="box-grid" id="boxGrid">
-    <!-- Box 1 -->
-    <section class="box-card" data-box="1">
-      <div class="box-ribbon">BOX 1</div>
-      <div class="box-icon">🎁</div>
-      <h2 class="box-title">青铜宝箱</h2>
-      <div class="box-price">起投 <b>0.05</b> BEM</div>
-
-      <div class="box-stats">
-        <div class="stat">
-          <span class="stat-label">倒计时 <i class="mount">mount</i></span>
-          <span class="stat-value timer" data-timer="1">--:--:--</span>
+  <!-- ===================== 中心大宝箱（主要视觉焦点） ===================== -->
+  <main class="stage">
+    <div class="big-chest" id="bigChest" data-theme="1">
+      <div class="chest-glow"></div>
+      <div class="chest-body">
+        <div class="chest-lid"></div>
+        <div class="chest-base">
+          <span class="chest-emoji" id="chestEmoji">🎁</span>
         </div>
-        <div class="stat">
-          <span class="stat-label">参与人数 <i class="mount">mount</i></span>
-          <span class="stat-value"><b class="players" data-players="1">0</b> / 20 人</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">奖池 <i class="total">Total</i></span>
-          <span class="stat-value pool" data-pool="1">0.00 BEM</span>
-        </div>
+        <div class="chest-lock"></div>
       </div>
+      <div class="chest-sparkles" id="chestSparkles"></div>
+    </div>
 
-      <button class="btn-bet" data-bet="1">投入 0.05 BEM</button>
-      <div class="bet-tip" data-tip="1"></div>
-    </section>
-
-    <!-- Box 2 -->
-    <section class="box-card" data-box="2">
-      <div class="box-ribbon">BOX 2</div>
-      <div class="box-icon">💎</div>
-      <h2 class="box-title">白银宝箱</h2>
-      <div class="box-price">起投 <b>0.5</b> BEM</div>
-
-      <div class="box-stats">
-        <div class="stat">
-          <span class="stat-label">倒计时 <i class="mount">mount</i></span>
-          <span class="stat-value timer" data-timer="2">--:--:--</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">参与人数 <i class="mount">mount</i></span>
-          <span class="stat-value"><b class="players" data-players="2">0</b> / 20 人</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">奖池 <i class="total">Total</i></span>
-          <span class="stat-value pool" data-pool="2">0.00 BEM</span>
-        </div>
+    <!-- 精简状态栏：倒计时 / 参与人数 / 奖池 -->
+    <div class="mini-stats" id="miniStats">
+      <div class="mini-stat">
+        <span class="mini-label">倒计时 <i class="mount">mount</i></span>
+        <span class="mini-value timer" id="globalTimer">--:--:--</span>
       </div>
-
-      <button class="btn-bet" data-bet="2">投入 0.5 BEM</button>
-      <div class="bet-tip" data-tip="2"></div>
-    </section>
-
-    <!-- Box 3 -->
-    <section class="box-card" data-box="3">
-      <div class="box-ribbon">BOX 3</div>
-      <div class="box-icon">👑</div>
-      <h2 class="box-title">黄金宝箱</h2>
-      <div class="box-price">起投 <b>5</b> BEM</div>
-
-      <div class="box-stats">
-        <div class="stat">
-          <span class="stat-label">倒计时 <i class="mount">mount</i></span>
-          <span class="stat-value timer" data-timer="3">--:--:--</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">参与人数 <i class="mount">mount</i></span>
-          <span class="stat-value"><b class="players" data-players="3">0</b> / 20 人</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">奖池 <i class="total">Total</i></span>
-          <span class="stat-value pool" data-pool="3">0.00 BEM</span>
-        </div>
+      <div class="mini-stat">
+        <span class="mini-label">参与人数 <i class="mount">mount</i></span>
+        <span class="mini-value"><b class="players" id="miniPlayers">0</b> <span id="miniPlayersMax">/ 20 人</span></span>
       </div>
+      <div class="mini-stat">
+        <span class="mini-label">总奖池 <i class="total">Total</i></span>
+        <span class="mini-value pool" id="miniPool">0.00 BEM</span>
+      </div>
+    </div>
 
-      <button class="btn-bet" data-bet="3">投入 5 BEM</button>
-      <div class="bet-tip" data-tip="3"></div>
-    </section>
+    <button class="btn-detail" id="openDetailBtn">查看详情 / 参与</button>
   </main>
 
-  <!-- ===================== 主宝箱 TapeBox（满 50 人开奖，无时间限制） ===================== -->
-  <section class="mainbox" id="mainBox">
-    <div class="mainbox-head">
-      <span class="mainbox-badge">TAPEBOX</span>
-      <h2>主宝箱 · 满 50 人即开奖</h2>
-    </div>
-    <p class="mainbox-desc">不设时间限制，参与人数达到 50 人立即开奖，公平随机抽取唯一赢家。</p>
+  <!-- ===================== 详情页（全屏 Modal） ===================== -->
+  <div class="detail-overlay hidden" id="detailOverlay">
+    <div class="detail-panel">
+      <button class="detail-close" id="closeDetailBtn">✕</button>
+      <div class="detail-head">
+        <span class="detail-icon" id="detailIcon">🎁</span>
+        <h2 class="detail-title" id="detailTitle">青铜宝箱</h2>
+        <div class="detail-price" id="detailPrice">起投 0.05 BEM</div>
+      </div>
 
-    <div class="mainbox-grid">
-      <!-- 青铜子宝箱 -->
-      <div class="subbox" data-subbox="bronze">
-        <div class="subbox-icon">🥉</div>
-        <h3>青铜宝箱</h3>
-        <div class="subbox-price">起投 <b>0.05</b> BEM</div>
-        <div class="subbox-progress">
-          <div class="progress-bar"><i class="progress-fill" data-fill="bronze"></i></div>
-          <span class="progress-text"><b class="players" data-players="bronze">0</b> / 50 人</span>
+      <p class="detail-desc" id="detailDesc"></p>
+
+      <div class="detail-stats">
+        <div class="stat">
+          <span class="stat-label">倒计时 <i class="mount">mount</i></span>
+          <span class="stat-value timer" data-timer="detail">--:--:--</span>
         </div>
-        <div class="subbox-pool">奖池 <b class="pool" data-pool="bronze">0.00 BEM</b></div>
-        <button class="btn-bet" data-bet="bronze">投入 0.05 BEM</button>
-        <div class="bet-tip" data-tip="bronze"></div>
-      </div>
-
-      <!-- 白银子宝箱 -->
-      <div class="subbox" data-subbox="silver">
-        <div class="subbox-icon">🥈</div>
-        <h3>白银宝箱</h3>
-        <div class="subbox-price">起投 <b>0.5</b> BEM</div>
-        <div class="subbox-progress">
-          <div class="progress-bar"><i class="progress-fill" data-fill="silver"></i></div>
-          <span class="progress-text"><b class="players" data-players="silver">0</b> / 50 人</span>
+        <div class="stat">
+          <span class="stat-label">参与人数 <i class="mount">mount</i></span>
+          <span class="stat-value"><b class="players" data-players="detail">0</b> <span id="detailPlayersMax">/ 20 人</span></span>
         </div>
-        <div class="subbox-pool">奖池 <b class="pool" data-pool="silver">0.00 BEM</b></div>
-        <button class="btn-bet" data-bet="silver">投入 0.5 BEM</button>
-        <div class="bet-tip" data-tip="silver"></div>
-      </div>
-
-      <!-- 钻石子宝箱 -->
-      <div class="subbox" data-subbox="diamond">
-        <div class="subbox-icon">💎</div>
-        <h3>钻石宝箱</h3>
-        <div class="subbox-price">起投 <b>5</b> BEM</div>
-        <div class="subbox-progress">
-          <div class="progress-bar"><i class="progress-fill" data-fill="diamond"></i></div>
-          <span class="progress-text"><b class="players" data-players="diamond">0</b> / 50 人</span>
+        <div class="stat">
+          <span class="stat-label">奖池 <i class="total">Total</i></span>
+          <span class="stat-value pool" data-pool="detail">0.00 BEM</span>
         </div>
-        <div class="subbox-pool">奖池 <b class="pool" data-pool="diamond">0.00 BEM</b></div>
-        <button class="btn-bet" data-bet="diamond">投入 5 BEM</button>
-        <div class="bet-tip" data-tip="diamond"></div>
+      </div>
+
+      <!-- 主宝箱：三个子箱选择 -->
+      <div class="detail-subboxes hidden" id="detailSubboxes">
+        <div class="subbox" data-subbox="bronze">
+          <div class="subbox-icon">🥉</div>
+          <h3>青铜宝箱</h3>
+          <div class="subbox-price">起投 <b>0.05</b> BEM</div>
+          <div class="subbox-progress">
+            <div class="progress-bar"><i class="progress-fill" data-fill="bronze"></i></div>
+            <span class="progress-text"><b class="players" data-players="bronze">0</b> / 50 人</span>
+          </div>
+          <div class="subbox-pool">奖池 <b class="pool" data-pool="bronze">0.00 BEM</b></div>
+          <button class="btn-bet" data-bet="bronze">投入 0.05 BEM</button>
+          <div class="bet-tip" data-tip="bronze"></div>
+        </div>
+
+        <div class="subbox" data-subbox="silver">
+          <div class="subbox-icon">🥈</div>
+          <h3>白银宝箱</h3>
+          <div class="subbox-price">起投 <b>0.5</b> BEM</div>
+          <div class="subbox-progress">
+            <div class="progress-bar"><i class="progress-fill" data-fill="silver"></i></div>
+            <span class="progress-text"><b class="players" data-players="silver">0</b> / 50 人</span>
+          </div>
+          <div class="subbox-pool">奖池 <b class="pool" data-pool="silver">0.00 BEM</b></div>
+          <button class="btn-bet" data-bet="silver">投入 0.5 BEM</button>
+          <div class="bet-tip" data-tip="silver"></div>
+        </div>
+
+        <div class="subbox" data-subbox="diamond">
+          <div class="subbox-icon">💎</div>
+          <h3>钻石宝箱</h3>
+          <div class="subbox-price">起投 <b>5</b> BEM</div>
+          <div class="subbox-progress">
+            <div class="progress-bar"><i class="progress-fill" data-fill="diamond"></i></div>
+            <span class="progress-text"><b class="players" data-players="diamond">0</b> / 50 人</span>
+          </div>
+          <div class="subbox-pool">奖池 <b class="pool" data-pool="diamond">0.00 BEM</b></div>
+          <button class="btn-bet" data-bet="diamond">投入 5 BEM</button>
+          <div class="bet-tip" data-tip="diamond"></div>
+        </div>
+      </div>
+
+      <!-- 普通宝箱：单个投注按钮 -->
+      <div class="detail-actions" id="detailActions">
+        <button class="btn-bet" id="detailBetBtn" data-bet="1">投入 0.05 BEM</button>
+        <div class="bet-tip" id="detailBetTip"></div>
+      </div>
+
+      <!-- 打赏入口 -->
+      <div class="tip-area">
+        <p class="tip-fake">打赏制作者中奖概率可能更高哦(假的)</p>
+        <p class="tip-note">打赏最低 0.1 BEM，上不封顶；打赏成功后下次提现手续费减免 2.5%（5% → 2.5%）</p>
+        <button class="btn-tip" id="tipBtn">打赏制作者</button>
       </div>
     </div>
-  </section>
-
-  <!-- ===================== 免费版 Type Box ===================== -->
-  <section class="typebox" id="typeBox">
-    <div class="typebox-glow"></div>
-    <div class="typebox-head">
-      <span class="typebox-badge">FREE</span>
-      <h2>Type Box · 免费版 TapeBox</h2>
-    </div>
-    <p class="typebox-desc">完全免费参与，不限人数，24:00 准时开奖。奖池 = 当日所有付费宝箱手续费的 1%，概率绝对公平。</p>
-
-    <div class="box-stats typebox-stats">
-      <div class="stat">
-        <span class="stat-label">倒计时 <i class="mount">mount</i></span>
-        <span class="stat-value timer" data-timer="free">--:--:--</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">参与人数 <i class="mount">mount</i></span>
-        <span class="stat-value"><b class="players" data-players="free">0</b> / 20 人</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">奖池 <i class="total">Total</i></span>
-        <span class="stat-value pool" data-pool="free">0.00 BEM</span>
-      </div>
-    </div>
-
-    <button class="btn-bet btn-free" data-bet="free">免费参与</button>
-    <div class="bet-tip" data-tip="free"></div>
-  </section>
+  </div>
 
   <!-- ===================== 中奖冲击弹窗 ===================== -->
   <div class="win-overlay hidden" id="winOverlay">
@@ -219,13 +192,6 @@
       <div class="win-actions">
         <button class="btn-withdraw" id="withdrawBtn">立即提现</button>
         <button class="btn-share" id="shareBtn">分享到 X</button>
-      </div>
-
-      <!-- 打赏区 -->
-      <div class="tip-area">
-        <p class="tip-fake">打赏制作者中奖概率可能更高哦(假的)</p>
-        <p class="tip-note">打赏最低 0.1 BEM，上不封顶；打赏成功后下次提现手续费减免 2.5%（5% → 2.5%）</p>
-        <button class="btn-tip" id="tipBtn">打赏制作者</button>
       </div>
 
       <button class="btn-close-win" id="closeWinBtn">关闭</button>
