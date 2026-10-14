@@ -38,7 +38,8 @@
   const SHARE_DISCOUNT = 0.01;     // 分享到 X 减免 1%
   const TIP_DISCOUNT = 0.025;      // 打赏后减免 2.5%
   const MIN_TIP = 0.1;             // 最低打赏金额
-  const TIME_JUMP_THRESHOLD = 5 * 60 * 1000; // 时间跳跃阈值 5 分钟
+  // 时间跳跃阈值：放宽到 24 小时，避免电脑休眠 / 时间同步导致误报
+  const TIME_JUMP_THRESHOLD = 24 * 60 * 60 * 1000;
 
   /* -------------------- 闭包内部状态 -------------------- */
   let walletAddress = null;   // 当前钱包地址
@@ -126,30 +127,23 @@
   const TIME_KEY = 'tapebox_last_time';
 
   // 检测系统时间是否被回调或快进
+  // 注意：不再显示全局红色警告条，仅在投注时通过 Toast 提示，不阻止浏览 UI
   function checkTimeTravel() {
     const now = Date.now();
     const last = parseInt(localStorage.getItem(TIME_KEY) || '0', 10);
 
     if (last > 0) {
       const diff = now - last;
-      // 时间倒退（diff < 0）或快进超过阈值 → 判定异常
+      // 时间倒退（diff < 0）或快进超过阈值（24 小时）→ 判定异常
       if (diff < 0 || diff > TIME_JUMP_THRESHOLD) {
         timeTampered = true;
-        showSecurityAlert('检测到系统时间异常，请校准本地时间后再操作。');
         return false;
       }
     }
-    // 记录本次时间戳
+    // 时间正常：清除异常标记并记录本次时间戳
+    timeTampered = false;
     localStorage.setItem(TIME_KEY, String(now));
     return true;
-  }
-
-  // 显示安全警告条
-  function showSecurityAlert(msg) {
-    const el = document.getElementById('securityAlert');
-    if (!el) return;
-    el.textContent = '⚠️ ' + msg;
-    el.classList.remove('hidden');
   }
 
   /* =========================================================
@@ -163,52 +157,51 @@
   }
 
   // 读取今日投注记录（带校验）
+  // 结构：{ [walletAddress]: { [boxKey]: true } }
   async function getBetRecord() {
     const key = 'tapebox_bets_' + todayKey();
     const data = await secureGet(key);
     if (data === null) {
-      // 校验失败或不存在 → 重置
-      if (localStorage.getItem(key)) {
-        showSecurityAlert('数据异常，已重置。');
-      }
+      // 校验失败或不存在 → 静默重置（不弹全局警告）
       await secureSet(key, {});
       return {};
     }
     return data;
   }
 
-  // 记录某 Box 今日已投注
+  // 记录某钱包地址今日已投注某 Box
   async function markBet(boxKey) {
+    if (!walletAddress) return;
     const rec = await getBetRecord();
-    rec[boxKey] = true;
+    const addr = walletAddress.toLowerCase();
+    if (!rec[addr]) rec[addr] = {};
+    rec[addr][boxKey] = true;
     await secureSet('tapebox_bets_' + todayKey(), rec);
   }
 
-  // 判断某 Box 今日是否已投注
+  // 判断某钱包地址今日是否已投注某 Box
   async function hasBet(boxKey) {
+    if (!walletAddress) return false;
     const rec = await getBetRecord();
-    return !!rec[boxKey];
+    const addr = walletAddress.toLowerCase();
+    return !!(rec[addr] && rec[addr][boxKey]);
   }
 
   // 读取各 Box 参与数据（带校验）
+  // 初始全部为 0，仅真实投注后累加
   async function getBoxData() {
     const key = 'tapebox_boxdata_' + todayKey();
     const data = await secureGet(key);
     if (data === null) {
-      if (localStorage.getItem(key)) {
-        showSecurityAlert('数据异常，已重置。');
-      }
-      // 初始化：随机生成模拟参与者
+      // 初始化：所有宝箱人数与奖池均为 0（无虚拟人数）
       const init = {};
       Object.keys(DAILY_BOXES).forEach(k => {
-        const players = secureRandomInt(8) + 2; // 2~9 人
-        init[k] = { players, pool: +(players * DAILY_BOXES[k].price).toFixed(4) };
+        init[k] = { players: 0, pool: 0 };
       });
       Object.keys(MAIN_BOXES).forEach(k => {
-        const players = secureRandomInt(20) + 5; // 5~24 人
-        init[k] = { players, pool: +(players * MAIN_BOXES[k].price).toFixed(4) };
+        init[k] = { players: 0, pool: 0 };
       });
-      init['free'] = { players: secureRandomInt(30) + 10, pool: 0 };
+      init['free'] = { players: 0, pool: 0 };
       await secureSet(key, init);
       return init;
     }
@@ -564,9 +557,11 @@
   });
 
   async function handleBet(boxKey) {
-    // 时间校验
-    if (!checkTimeTravel()) return;
-    if (timeTampered) { showToast('系统时间异常，请校准本地时间'); return; }
+    // 时间校验：仅在投注时提示，不阻止浏览 UI
+    if (!checkTimeTravel()) {
+      showToast('本地时间异常，请校准系统时间后再操作');
+      return;
+    }
     if (!walletAddress) { showToast('请先连接钱包'); return; }
 
     // 根据 betKey 反查选项元数据
@@ -583,7 +578,7 @@
       return;
     }
 
-    if (await hasBet(meta.betKey)) { showToast('今日该宝箱已投入'); return; }
+    if (await hasBet(meta.betKey)) { showToast('今日该宝箱已投入，明天再来'); return; }
 
     const data = await getBoxData();
     const maxPlayers = isMain ? MAIN_MAX_PLAYERS : DAILY_MAX_PLAYERS;
@@ -810,7 +805,7 @@
      ========================================================= */
 
   async function init() {
-    // 页面加载时检测时间旅行
+    // 页面加载时检测时间旅行（仅记录状态，不弹全局警告）
     checkTimeTravel();
 
     initMarquee();
